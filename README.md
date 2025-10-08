@@ -45,34 +45,6 @@ Icons: Font Awesome, Lucide React
 
 Date Picker: React Datepicker
 
-------------------------------------------------------
-
-Struktur Project
-text
-src/
-├── components/
-│   ├── Table/
-│   │   ├── TableView.jsx
-│   │   ├── TableRow.jsx
-│   │   └── TableCell.jsx
-│   ├── Kanban/
-│   │   ├── KanbanView.jsx
-│   │   ├── KanbanColumn.jsx
-│   │   └── KanbanCard.jsx
-│   ├── Modal/
-│   │   └── TaskModal.jsx
-│   ├── SearchBar.jsx
-│   ├── PersonFilter.jsx
-│   └── SortMenu.jsx
-├── pages/
-│   ├── TablePage.jsx
-│   └── KanbanPage.jsx
-├── api/
-│   └── taskService.js
-├── styles/
-│   └── index.css
-├── App.jsx
-└── main.jsx
 
 -------------------------------------------
 Instalasi
