@@ -64,7 +64,7 @@ export default function TablePage({ tasks, loading, addTask, updateTask, removeT
       const storedDates = JSON.parse(localStorage.getItem('taskDates') || '{}');
       storedDates[updatedTask._id] = updatedTask.date;
       localStorage.setItem('taskDates', JSON.stringify(storedDates));
-      console.log('💾 Date saved to localStorage:', updatedTask.date);
+      console.log(' Date saved to localStorage:', updatedTask.date);
     } else {
       // Kirim update ke API hanya untuk perubahan selain date
       const { _id, ...taskForAPI } = updatedTask;
