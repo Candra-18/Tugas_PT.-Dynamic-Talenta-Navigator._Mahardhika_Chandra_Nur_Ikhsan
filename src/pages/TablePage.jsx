@@ -16,7 +16,6 @@ export default function TablePage({ tasks, loading, addTask, updateTask, removeT
 
   // Generate unique ID berdasarkan kombinasi field yang unik
   const generateTaskId = (task) => {
-    // Gunakan kombinasi title + developer + date sebagai identifier
     const developerStr = Array.isArray(task.developer) 
       ? task.developer.join('') 
       : task.developer || '';
@@ -24,17 +23,19 @@ export default function TablePage({ tasks, loading, addTask, updateTask, removeT
     return `${task.title}-${developerStr}-${task.date}`.replace(/\s+/g, '-');
   };
 
-  // Load completed status dari localStorage dan gabungkan dengan tasks
+  // Load completed status dan dates dari localStorage
   useEffect(() => {
     if (tasks && tasks.length > 0) {
       const storedCompleted = JSON.parse(localStorage.getItem('taskCompleted') || '{}');
+      const storedDates = JSON.parse(localStorage.getItem('taskDates') || '{}');
       
       const tasksWithCompleted = tasks.map(task => {
         const taskId = generateTaskId(task);
         return {
           ...task,
-          _id: taskId, // Tambahkan _id sebagai identifier
-          completed: storedCompleted[taskId] || false
+          _id: taskId,
+          completed: storedCompleted[taskId] || false,
+          date: storedDates[taskId] || task.date // Prioritize date from localStorage
         };
       });
       
@@ -43,7 +44,9 @@ export default function TablePage({ tasks, loading, addTask, updateTask, removeT
   }, [tasks]);
 
   // Handle update task dengan localStorage
-  const handleUpdateTask = (updatedTask) => {   
+  const handleUpdateTask = (updatedTask) => {
+    console.log('Updating task:', updatedTask._id, 'completed:', updatedTask.completed);
+    
     // Update local state
     setTasksWithCompleted(prev => 
       prev.map(task => 
@@ -56,9 +59,17 @@ export default function TablePage({ tasks, loading, addTask, updateTask, removeT
     storedCompleted[updatedTask._id] = updatedTask.completed;
     localStorage.setItem('taskCompleted', JSON.stringify(storedCompleted));
     
-    // Kirim update ke API (tanpa completed property dan _id)
-    const {_id, ...taskForAPI } = updatedTask;
-    updateTask(taskForAPI);
+    // Untuk perubahan date, simpan ke localStorage khusus dates
+    if (updatedTask.date !== undefined) {
+      const storedDates = JSON.parse(localStorage.getItem('taskDates') || '{}');
+      storedDates[updatedTask._id] = updatedTask.date;
+      localStorage.setItem('taskDates', JSON.stringify(storedDates));
+      console.log('💾 Date saved to localStorage:', updatedTask.date);
+    } else {
+      // Kirim update ke API hanya untuk perubahan selain date
+      const { _id, ...taskForAPI } = updatedTask;
+      updateTask(taskForAPI);
+    }
   };
 
   // Reset ke halaman 1 ketika filter berubah
@@ -67,7 +78,7 @@ export default function TablePage({ tasks, loading, addTask, updateTask, removeT
   }, [query, selectedPerson, sorts]);
 
   // Ambil semua nama unik dari tasks
-   const persons = useMemo(() => {
+  const persons = useMemo(() => {
     const allPersons = Array.from(new Set(tasksWithCompleted.flatMap(t => t.developer || [])));
     return allPersons;
   }, [tasksWithCompleted]);
@@ -76,18 +87,18 @@ export default function TablePage({ tasks, loading, addTask, updateTask, removeT
   const filtered = useMemo(() => {
     let arr = tasksWithCompleted.slice();
 
-    //  Filter by search
+    // Filter by search
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       arr = arr.filter(t => t.title.toLowerCase().includes(q));
     }
 
-    //  Filter by selected person
+    // Filter by selected person
     if (selectedPerson) {
       arr = arr.filter(t => t.developer?.includes(selectedPerson));
     }
 
-    // ↕ Sorting
+    // Sorting
     if (sorts.length > 0) {
       arr.sort((a, b) => {
         for (const s of sorts) {

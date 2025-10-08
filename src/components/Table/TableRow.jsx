@@ -1,20 +1,17 @@
 import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faChevronDown,
   faUser,
   faPlus,
   faCommentMedical,
+  faEdit,
+  faSave,
+  faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function TableRow({ task, onUpdate }) {
-  const [editingField, setEditingField] = useState(null);
-
-  const handleChange = (key, newValue) => {
-    const updated = { ...task, [key]: newValue };
-    onUpdate(updated);
-    setEditingField(null);
-  };
+  const [isEditingDate, setIsEditingDate] = useState(false);
+  const [editedDate, setEditedDate] = useState(task.date || "");
 
   const handleCheckboxChange = (e) => {
     const updated = { 
@@ -50,6 +47,24 @@ export default function TableRow({ task, onUpdate }) {
     );
   };
 
+  // Format tanggal menjadi DD-MM-YYYY
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "-";
+      
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      
+      return `${day}-${month}-${year}`;
+    } catch {
+      return "-";
+    }
+  };
+
   // Warna untuk status, priority, dan type
   const getStatusColor = (status) => {
     const colors = {
@@ -83,41 +98,41 @@ export default function TableRow({ task, onUpdate }) {
     return colors[type] || "bg-gray-500 text-white";
   };
 
-  // Render dropdown field
-  const renderDropdownField = (field, value, options, colorClass) => {
-    if (editingField === field) {
-      return (
-        <select
-          value={value || ""}
-          onChange={(e) => handleChange(field, e.target.value)}
-          onBlur={() => setEditingField(null)}
-          autoFocus
-          className={`w-full px-2 py-1 text-xs rounded border-0 focus:ring-2 focus:ring-blue-500 ${colorClass}`}
-          style={{ 
-            appearance: 'none',
-            WebkitAppearance: 'none',
-            MozAppearance: 'none'
-          }}
-        >
-          <option value="">Select...</option>
-          {options.map(option => (
-            <option key={option} value={option} className="text-gray-800 bg-white">
-              {option}
-            </option>
-          ))}
-        </select>
-      );
-    }
+  // Handle Date Edit - SIMPAN DI LOCALSTORAGE DAN UPDATE UI
+  const handleEditDate = () => {
+    setIsEditingDate(true);
+    setEditedDate(task.date || "");
+  };
 
-    return (
-      <div 
-        className={`w-full px-2 py-1 text-xs rounded cursor-pointer ${colorClass} flex items-center justify-between`}
-        onClick={() => setEditingField(field)}
-      >
-        <span>{value || "Select..."}</span>
-        <FontAwesomeIcon icon={faChevronDown} className="ml-1 text-xs" />
-      </div>
-    );
+  const handleSaveDate = () => {
+    // 1. Simpan ke localStorage
+    const taskDates = JSON.parse(localStorage.getItem('taskDates') || '{}');
+    taskDates[task._id || task.title] = editedDate;
+    localStorage.setItem('taskDates', JSON.stringify(taskDates));
+    
+    console.log('💾 Date saved to localStorage:', { 
+      taskId: task._id || task.title, 
+      date: editedDate 
+    });
+    
+    // 2. Update UI dengan memanggil onUpdate (tanpa kirim ke API)
+    const updatedTask = { 
+      ...task, 
+      date: editedDate 
+    };
+    onUpdate(updatedTask);
+    
+    // 3. Tutup mode edit
+    setIsEditingDate(false);
+  };
+
+  const handleCancelDate = () => {
+    setEditedDate(task.date || "");
+    setIsEditingDate(false);
+  };
+
+  const handleDateChange = (e) => {
+    setEditedDate(e.target.value);
   };
 
   return (
@@ -152,53 +167,80 @@ export default function TableRow({ task, onUpdate }) {
         {formatDevelopers(task.developer)}
       </td>
       
-      {/* Status dengan dropdown */}
+      {/* Status - READ ONLY */}
       <td className="px-4 py-3">
         <div className="min-h-[32px] flex items-center">
-          {renderDropdownField(
-            "status", 
-            task.status, 
-            ["Ready to start", "In Progress", "Waiting for review", "Pending Deploy", "Done", "Stuck"],
-            getStatusColor(task.status)
-          )}
+          <div className={`w-full px-2 py-1 text-xs rounded ${getStatusColor(task.status)}`}>
+            <span>{task.status || "Select..."}</span>
+          </div>
         </div>
       </td>
       
-      {/* Priority dengan dropdown */}
+      {/* Priority - READ ONLY */}
       <td className="px-4 py-3">
         <div className="min-h-[32px] flex items-center">
-          {renderDropdownField(
-            "priority", 
-            task.priority, 
-            ["Critical", "High", "Medium", "Low", "Best Effort"],
-            getPriorityColor(task.priority)
-          )}
+          <div className={`w-full px-2 py-1 text-xs rounded ${getPriorityColor(task.priority)}`}>
+            <span>{task.priority || "Select..."}</span>
+          </div>
         </div>
       </td>
       
-      {/* Type dengan dropdown */}
+      {/* Type - READ ONLY */}
       <td className="px-4 py-3">
         <div className="min-h-[32px] flex items-center">
-          {renderDropdownField(
-            "type", 
-            task.type, 
-            ["Feature Enhancements", "Bug", "Other"],
-            getTypeColor(task.type)
-          )}
+          <div className={`w-full px-2 py-1 text-xs rounded ${getTypeColor(task.type)}`}>
+            <span>{task.type || "Select..."}</span>
+          </div>
         </div>
       </td>
       
-      {/* Date */}
-      <td className="px-4 py-3 text-center ">
-        <span className="text-gray-300">{task.date || "-"}</span>
-      </td>
-      
-      {/* Estimated SP */}
+      {/* Date - EDITABLE (LocalStorage only) */}
       <td className="px-4 py-3 text-center">
-        <span className="text-gray-300 ">{task["Estimated SP"] || "-"}</span>
+        {isEditingDate ? (
+          <div className="flex items-center gap-1">
+            <input
+              type="date"
+              value={editedDate}
+              onChange={handleDateChange}
+              className="px-2 py-1 text-xs text-white bg-gray-700 border border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <button
+              onClick={handleSaveDate}
+              className="p-1 text-green-400 transition-colors rounded hover:bg-gray-600"
+              title="Save to LocalStorage"
+            >
+              <FontAwesomeIcon icon={faSave} className="w-3 h-3" />
+            </button>
+            <button
+              onClick={handleCancelDate}
+              className="p-1 text-red-400 transition-colors rounded hover:bg-gray-600"
+              title="Cancel"
+            >
+              <FontAwesomeIcon icon={faTimes} className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-1">
+            <span className="text-gray-300">
+              {formatDate(task.date)}
+            </span>
+            <button
+              onClick={handleEditDate}
+              className="p-1 text-gray-400 transition-colors rounded hover:text-blue-400 hover:bg-gray-600"
+              title="Edit Date (LocalStorage only)"
+            >
+              <FontAwesomeIcon icon={faEdit} className="w-3 h-3" />
+            </button>
+          </div>
+        )}
       </td>
       
-      {/* Actual SP */}
+      {/* Estimated SP - READ ONLY */}
+      <td className="px-4 py-3 text-center">
+        <span className="text-gray-300">{task["Estimated SP"] || "-"}</span>
+      </td>
+      
+      {/* Actual SP - READ ONLY */}
       <td className="px-4 py-3 text-center">
         <span className="text-gray-300">{task["Actual SP"] || "-"}</span>
       </td>
