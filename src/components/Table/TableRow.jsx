@@ -110,7 +110,7 @@ export default function TableRow({ task, onUpdate }) {
     taskDates[task._id || task.title] = editedDate;
     localStorage.setItem('taskDates', JSON.stringify(taskDates));
     
-    console.log('💾 Date saved to localStorage:', { 
+    console.log(' Date saved to localStorage:', { 
       taskId: task._id || task.title, 
       date: editedDate 
     });
