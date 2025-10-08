@@ -182,7 +182,9 @@ Assign ke anggota tim
 
 Set due date dan prioritas
 
-🔄 Development
+--------------------------------------------------
+
+ Development
 Project ini menggunakan:
 
 ESLint untuk code linting
