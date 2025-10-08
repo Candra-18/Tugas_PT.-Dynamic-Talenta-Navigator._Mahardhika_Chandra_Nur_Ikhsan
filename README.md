@@ -112,7 +112,7 @@ TableView: Representasi tugas dalam bentuk tabel
 
 KanbanView: Papan kanban dengan drag-and-drop
 
-TaskModal: Form untuk membuat/mengedit tugas
+TaskModal: Form untuk membuat
 
 SearchBar: Fungsi pencarian global
 
